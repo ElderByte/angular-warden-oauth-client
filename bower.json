@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Provides a angular OAuth client for JWT handling. Supports role based security integrated with ui-router.",
   "main": [
-    "dist/angular-warden-oauth-client.min.js"
+    "dist/angular-warden-oauth-client.js"
   ],
   "ignore": [
     "src",
