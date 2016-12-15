@@ -11,7 +11,8 @@ angular.module('wardenOAuth')
             accessDeniedHandler : function () {
                 var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
-            }
+            },
+            defaultRedirectState : "home"
         };
 
         this.config = function(config) {
@@ -22,8 +23,8 @@ angular.module('wardenOAuth')
             function($rootScope, $state, $window, Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
-            var _deniedState = null;
-            var _deniedStateParams = null;
+            var _desiredState = null;
+            var _desiredStateParams = null;
 
             var Auth = {
 
@@ -68,10 +69,10 @@ angular.module('wardenOAuth')
 
                     var redirectUri;
 
-                    if(_deniedState){
-                        redirectUri = $state.href(_deniedState.name, _deniedStateParams, {absolute: true});
+                    if(_desiredState){
+                        redirectUri = $state.href(_desiredState.name, _desiredStateParams, {absolute: true});
                     }else{
-                        redirectUri = $state.href('home', {}, {absolute: true});
+                        redirectUri = $state.href(_config.defaultRedirectState, {}, {absolute: true});
                     }
 
                     return this.getOAuthLoginUrl(_config.clientId, redirectUri);
@@ -91,7 +92,7 @@ angular.module('wardenOAuth')
 
                 /**
                  * Returns the JWT token from the URL if available.
-                 * @returns {*}
+                 * @returns {string} Returns a JWT token string if present.
                  */
                 fetchUrlToken : function () {
 
@@ -190,20 +191,18 @@ angular.module('wardenOAuth')
                 }
             };
 
+            // Install a $stateChangeStart event listener
             $rootScope.$on('$stateChangeStart', function (event, toState, toStateParams) {
 
-
-                console.log("auth.service.js - $stateChangeStart");
+                // console.log("auth.service.js - $stateChangeStart");
+                _desiredState = toState;
+                _desiredStateParams = toStateParams;
 
                 Auth.authenticate();
-
 
                 if(!Auth.hasPermission(toState)){
 
                     console.log("User lacks privilege for requested state '"+toState.name+"'. Handling ...");
-
-                    _deniedState = toState;
-                    _deniedStateParams = toStateParams;
 
                     event.preventDefault();
                     Auth.permissionDenied();
