@@ -8,11 +8,11 @@ Include the `wardenOAuth` module as a dependency of your Angular App.
 * It will automatically register $http injectors which inject the current JWT token to your requests
 * It will check the upcomming state required roles with the roles of the currently logged-in user.
 * If there is no logged in user, it will redirect you to the OAuth server for login.
-
+* Upon login, the JWT will be parsed and available as Identity object `Principal.getIdentity()`
 
 ### Requiring roles for a state
 
-You can specify the required roles for a state by defining an roles array in the data section of your state:
+You can specify the required roles for a state by defining a roles array `roles: ['USER']` in the data section of your state:
 ```javascript
 $stateProvider
             .state('positions', {
@@ -46,3 +46,8 @@ You can configure the OAuth client in your Angular configuration section by inje
 
 });
 ```
+
+
+**Credits**
+
+[angular-jwt](https://github.com/auth0/angular-jwt)
