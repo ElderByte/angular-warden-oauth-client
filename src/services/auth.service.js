@@ -9,6 +9,7 @@ angular.module('wardenOAuth')
             clientId : "myApp",
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
             accessDeniedHandler : function () {
+                var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
             }
         };
