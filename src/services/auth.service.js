@@ -43,9 +43,21 @@ angular.module('wardenOAuth')
                 redirectToLogin : function () {
                     var loginUri = this.getLoginUrl();
                     console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
-                    $window.location.href = loginUri;
+                    this.redirectTo(loginUri);
                 },
 
+                redirectToLogout : function () {
+                    var logoutUri = this.getLogoutUrl();
+                    this.redirectTo(logoutUri);
+                },
+
+                redirectTo : function (url) {
+                    $window.location.href = url;
+                },
+
+                getLogoutUrl : function () {
+                    return this.getLoginUrl() + "&action=logout";
+                },
 
                 /**
                  * Returns the OAuth login URL
@@ -141,13 +153,21 @@ angular.module('wardenOAuth')
 
                 },
 
-                logout: function () {
+                /**
+                 * Performs a logout of the current user.
+                 *
+                 * @param {boolean} global Perform a global logout?
+                 */
+                logout: function (global) {
 
                     console.log("Logging out...");
                     JwtTokenService.deleteToken();
                     Principal.authenticate(null);
 
-                    // TODO Redirect to OAuth logout
+                    if(global){
+                      // Global logout
+                      this.redirectToLogout();
+                    }
                 },
 
                 /**
