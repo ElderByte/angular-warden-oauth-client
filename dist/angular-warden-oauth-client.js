@@ -33,8 +33,10 @@ angular.module('wardenOAuth')
             clientId : "myApp",
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
             accessDeniedHandler : function () {
+                var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
-            }
+            },
+            defaultRedirectState : "home"
         };
 
         this.config = function(config) {
@@ -45,8 +47,8 @@ angular.module('wardenOAuth')
             function($rootScope, $state, $window, Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
-            var _deniedState = null;
-            var _deniedStateParams = null;
+            var _desiredState = null;
+            var _desiredStateParams = null;
 
             var Auth = {
 
@@ -67,9 +69,21 @@ angular.module('wardenOAuth')
                 redirectToLogin : function () {
                     var loginUri = this.getLoginUrl();
                     console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
-                    $window.location.href = loginUri;
+                    this.redirectTo(loginUri);
                 },
 
+                redirectToLogout : function () {
+                    var logoutUri = this.getLogoutUrl();
+                    this.redirectTo(logoutUri);
+                },
+
+                redirectTo : function (url) {
+                    $window.location.href = url;
+                },
+
+                getLogoutUrl : function () {
+                    return this.getLoginUrl() + "&action=logout";
+                },
 
                 /**
                  * Returns the OAuth login URL
@@ -79,10 +93,10 @@ angular.module('wardenOAuth')
 
                     var redirectUri;
 
-                    if(_deniedState){
-                        redirectUri = $state.href(_deniedState.name, _deniedStateParams, {absolute: true});
+                    if(_desiredState){
+                        redirectUri = $state.href(_desiredState.name, _desiredStateParams, {absolute: true});
                     }else{
-                        redirectUri = $state.href('home', {}, {absolute: true});
+                        redirectUri = $state.href(_config.defaultRedirectState, {}, {absolute: true});
                     }
 
                     return this.getOAuthLoginUrl(_config.clientId, redirectUri);
@@ -102,7 +116,7 @@ angular.module('wardenOAuth')
 
                 /**
                  * Returns the JWT token from the URL if available.
-                 * @returns {*}
+                 * @returns {string} Returns a JWT token string if present.
                  */
                 fetchUrlToken : function () {
 
@@ -165,13 +179,21 @@ angular.module('wardenOAuth')
 
                 },
 
-                logout: function () {
+                /**
+                 * Performs a logout of the current user.
+                 *
+                 * @param {boolean} global Perform a global logout?
+                 */
+                logout: function (global) {
 
                     console.log("Logging out...");
                     JwtTokenService.deleteToken();
                     Principal.authenticate(null);
 
-                    // TODO Redirect to OAuth logout
+                    if(global){
+                      // Global logout
+                      this.redirectToLogout();
+                    }
                 },
 
                 /**
@@ -193,20 +215,18 @@ angular.module('wardenOAuth')
                 }
             };
 
+            // Install a $stateChangeStart event listener
             $rootScope.$on('$stateChangeStart', function (event, toState, toStateParams) {
 
-
-                console.log("auth.service.js - $stateChangeStart");
+                // console.log("auth.service.js - $stateChangeStart");
+                _desiredState = toState;
+                _desiredStateParams = toStateParams;
 
                 Auth.authenticate();
-
 
                 if(!Auth.hasPermission(toState)){
 
                     console.log("User lacks privilege for requested state '"+toState.name+"'. Handling ...");
-
-                    _deniedState = toState;
-                    _deniedStateParams = toStateParams;
 
                     event.preventDefault();
                     Auth.permissionDenied();
