@@ -12,7 +12,8 @@ angular.module('wardenOAuth')
                 var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
             },
-            defaultRedirectState : "home"
+            defaultRedirectState : "home",
+            stateRoleSecurityEnabled : true
         };
 
         this.config = function(config) {
@@ -178,6 +179,11 @@ angular.module('wardenOAuth')
                  * @returns {boolean}
                  */
                 hasPermission : function(state) {
+
+                    if(!_config.stateRoleSecurityEnabled){
+                      return true;
+                    }
+
                     if (state.data &&
                         state.data.roles &&
                         state.data.roles.length > 0 &&
