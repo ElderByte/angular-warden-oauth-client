@@ -41,9 +41,11 @@ You can configure the OAuth client in your Angular configuration section by inje
         accessDeniedHandler : function () {
         	var $state = angular.injector().get('$state');
             $state.go("accessdenied");
-        }
+        },
+		defaultRedirectState : "home",
+        stateRoleSecurityEnabled : true
 	});
-
+	
 });
 ```
 
