@@ -88,7 +88,7 @@ angular.module('wardenOAuth')
                   var stateUrl = $state.href(_desiredState.name, _desiredStateParams);
                   var angularRoute = UrlLocationService.trimUntilHash(stateUrl);
 
-                  return absUrl + "#" + angularRoute
+                  return absUrl + "#" + angularRoute;
                 },
 
                 /**

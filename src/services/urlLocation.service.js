@@ -13,7 +13,7 @@ angular.module('wardenOAuth')
             deleteQueryParam: function (key) {
                 console.log("Attempting to delete query param " + key );
                 $location.search(key, null);
-            }
+            },
 
             /**
             * Returns the current absolute url including the path,
@@ -26,7 +26,7 @@ angular.module('wardenOAuth')
             */
             absUrlTillHash: function (){
               return window.location.href.split('#',1)[0];
-            }
+            },
 
             /**
             * Trims a given url (part) until a hash-bang:
