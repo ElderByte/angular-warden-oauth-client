@@ -91,15 +91,28 @@ angular.module('wardenOAuth')
                  */
                 getLoginUrl : function () {
 
-                    var redirectUri;
+                    var state;
+                    var params = {};
 
                     if(_desiredState){
-                        redirectUri = $state.href(_desiredState.name, _desiredStateParams, {absolute: true});
+                        state = _desiredState.name;
+                        params = _desiredStateParams;
                     }else{
-                        redirectUri = $state.href(_config.defaultRedirectState, {}, {absolute: true});
+                        state = _config.defaultRedirectState;
                     }
-
+                    var redirectUri = this.getAbsoluteStateUrl(state, params);
                     return this.getOAuthLoginUrl(_config.clientId, redirectUri);
+                },
+
+
+                getAbsoluteStateUrl : function(state, params) {
+                  //return $state.href(_desiredState.name, _desiredStateParams, {absolute: true});
+
+                  var absUrl = UrlLocationService.absUrlTillHash();
+                  var stateUrl = $state.href(_desiredState.name, _desiredStateParams);
+                  var angularRoute = UrlLocationService.trimUntilHash(stateUrl);
+
+                  return absUrl + "#" + angularRoute;
                 },
 
                 /**
@@ -440,9 +453,33 @@ angular.module('wardenOAuth')
             deleteQueryParam: function (key) {
                 console.log("Attempting to delete query param " + key );
                 $location.search(key, null);
+            },
+
+            /**
+            * Returns the current absolute url including the path,
+            * but without the hash-bang part.
+            *
+            * given:  'http://server.any/thing?asdf#/after/the/bang'
+            * =>
+            * result: 'http://server.any/thing?asdf'
+            *
+            */
+            absUrlTillHash: function (){
+              return window.location.href.split('#',1)[0];
+            },
+
+            /**
+            * Trims a given url (part) until a hash-bang:
+            * given: 'any/thing?asdf#/after/the/bang'
+            * =>
+            * result: '/after/the/bang'
+            */
+            trimUntilHash : function (url){
+               var parts = url.split('#',2);
+               return parts.length == 1 ? parts[0] : parts[1];
             }
+
         };
     }]);
-
 
 }());
