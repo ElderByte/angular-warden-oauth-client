@@ -6,7 +6,7 @@ Provides an Angular OAuth client for JWT handling. Supports role based security 
 Include the `wardenOAuth` module as a dependency of your Angular App.
 
 * It will automatically register $http injectors which inject the current JWT token to your requests
-* It will check the upcomming state required roles with the roles of the currently logged-in user.
+* It will check the upcoming state required roles with the roles of the currently logged-in user.
 * If there is no logged in user, it will redirect you to the OAuth server for login.
 * Upon login, the JWT will be parsed and available as Identity object `Principal.getIdentity()`
 
