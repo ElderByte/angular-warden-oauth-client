@@ -77,19 +77,8 @@ angular.module('wardenOAuth')
                     }else{
                         state = _config.defaultRedirectState;
                     }
-                    var redirectUri = this.getAbsoluteStateUrl(state, params);
+                    var redirectUri = UrlLocationService.getAbsoluteStateUrl(state, params);
                     return this.getOAuthLoginUrl(_config.clientId, redirectUri);
-                },
-
-
-                getAbsoluteStateUrl : function(state, params) {
-                  //return $state.href(_desiredState.name, _desiredStateParams, {absolute: true});
-
-                  var absUrl = UrlLocationService.absUrlTillHash();
-                  var stateUrl = $state.href(_desiredState.name, _desiredStateParams);
-                  var angularRoute = UrlLocationService.trimUntilHash(stateUrl);
-
-                  return absUrl + "#" + angularRoute;
                 },
 
                 /**

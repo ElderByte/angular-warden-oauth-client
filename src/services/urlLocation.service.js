@@ -3,7 +3,7 @@
 
 angular.module('wardenOAuth')
 
-    .factory('UrlLocationService', function ($location) {
+    .factory('UrlLocationService', function ($location, $state) {
         return {
 
             parseQueryParams: function () {
@@ -16,6 +16,20 @@ angular.module('wardenOAuth')
             },
 
             /**
+            * Returns an absolute URL with the given state/params
+            * 
+            * This method is more robust than $state.href(s,p,{absolute : true})
+            */
+            getAbsoluteStateUrl : function(state, params) {
+
+              var absUrl = this._absUrlTillHash();
+              var stateUrl = $state.href(state, params);
+              var angularRoute = this._trimUntilHash(stateUrl);
+
+              return absUrl + "#" + angularRoute;
+            },
+
+            /**
             * Returns the current absolute url including the path,
             * but without the hash-bang part.
             *
@@ -24,7 +38,7 @@ angular.module('wardenOAuth')
             * result: 'http://server.any/thing?asdf'
             *
             */
-            absUrlTillHash: function (){
+            _absUrlTillHash: function (){
               return window.location.href.split('#',1)[0];
             },
 
@@ -34,7 +48,7 @@ angular.module('wardenOAuth')
             * =>
             * result: '/after/the/bang'
             */
-            trimUntilHash : function (url){
+            _trimUntilHash : function (url){
                var parts = url.split('#',2);
                return parts.length == 1 ? parts[0] : parts[1];
             }
