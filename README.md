@@ -89,7 +89,7 @@ Just configure your login state:
 });
 ```
 
-In your custom login controller, you should login by using one of the login methods.
+In your custom login controller, you should login by using one of the `Auth.login*` methods.
 For example, if your login system is based on JWT, you can perform the login with
 ```javascript
 Auth.loginWithJwt(myJWTToken);
