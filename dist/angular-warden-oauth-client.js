@@ -123,15 +123,17 @@ angular.module('wardenOAuth')
 
                   if(!jwtToken) throw "You must provide a JWT token in Auth.loginWithJwt(jwt)";
 
-                  JwtTokenService.setToken(token);
-                  var identity = JwtTokenService.parseIdentity(token);
+                  JwtTokenService.setToken(jwtToken);
+                  var identity = JwtTokenService.parseIdentity(jwtToken);
                   if(identity.isValid()){
                       // Success
                       Principal.authenticate(identity);
                       console.log("Principal authenticated with: " + JSON.stringify(identity));
+                      return true;
                   }else{
                       console.error("The parsed identity was not valid (token probably expired)!");
                       this.logout(false);
+                      return false;
                   }
               },
 
