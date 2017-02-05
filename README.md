@@ -31,24 +31,69 @@ This is obviously only a visual help for your users so that the dont see parts t
 
 ## Configuration
 
+You can configure the auth client in your Angular configuration section by injecting the `AuthProvider`, and setting your own `configuration` object:
+
+```javascript
+.config(function (AuthProvider) {
+        var configuraton = {}; // TODO
+	AuthProvider.config(configuration);
+});
+```
+
+### General configuration properties
+
+**accessDeniedHandler [function()]**
+
+```javascript
+accessDeniedHandler : function () {
+    var $state = angular.injector().get('$state');
+    $state.go("accessdenied");
+}
+```
+
+**stateRoleSecurityEnabled [boolean]**
+Enable or disable the role securty checks. Enabled by default.
+```javascript
+stateRoleSecurityEnabled : false
+```
+**defaultRedirectState [string]**
+```javascript
+defaultRedirectState : 'home'
+```
+
+
+### OAuth Configuration
+
 You can configure the OAuth client in your Angular configuration section by injecting the `AuthProvider`.
 ```javascript
 .config(function (AuthProvider) {
 
 	AuthProvider.config({
 		clientId : "myApp",
-        loginUrl : "https://myOAuthServer.com/oauth/login",
-        accessDeniedHandler : function () {
-        	var $state = angular.injector().get('$state');
-            $state.go("accessdenied");
-        },
-		defaultRedirectState : "home",
-        stateRoleSecurityEnabled : true
+        loginUrl : "https://myOAuthServer.com/oauth/login"
 	});
 	
 });
 ```
 
+### Local Login Configuration
+If you dont want to use an OAuth server redirect, you can implement the login dialog in your own app.
+Just configure your login state:
+```javascript
+.config(function (AuthProvider) {
+
+	AuthProvider.config({
+		clientId : "myApp",
+        loginState : "login",
+	});
+});
+```
+
+In your custom login controller, you should login by using one of the login methods.
+For example, if your login system is based on JWT, you can perform the login with
+```javascript
+Auth.loginWithJwt(myJWTToken);
+```
 
 **Credits**
 
