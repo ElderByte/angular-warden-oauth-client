@@ -20,8 +20,11 @@ angular.module('wardenOAuth')
             _config = config;
         };
 
-        this.$get = ["$rootScope", "$state", "$window", "Principal", "JwtTokenService", "UrlLocationService",
-            function($rootScope, $state, $window, Principal, JwtTokenService, UrlLocationService) {
+        this.$get = ["$state", "$window", "$transitions",
+                     "Principal", "JwtTokenService", "UrlLocationService",
+
+            function($state, $window, $transitions,
+                     Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
             var _desiredState = null;
@@ -199,29 +202,27 @@ angular.module('wardenOAuth')
                 }
             };
 
-            // Install a $stateChangeStart event listener
-            $rootScope.$on('$stateChangeStart', function (event, toState, toStateParams) {
+            // Authentication hook
 
-                // console.log("auth.service.js - $stateChangeStart");
-                _desiredState = toState;
-                _desiredStateParams = toStateParams;
+            $transitions.onBefore({}, function (trans) {
+
+                // Before we grant to visit a given state, we check if there are role restrictions.
+                _desiredState = trans.$to();
+                _desiredStateParams = trans.params();
 
                 Auth.authenticate();
 
-                if(!Auth.hasPermission(toState)){
-
-                    console.log("User lacks privilege for requested state '"+toState.name+"'. Handling ...");
-
-                    event.preventDefault();
+                if(!Auth.hasPermission(_desiredState)){
+                    console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
                     Auth.permissionDenied();
-
+                    return false;
                 }else{
-                    console.log("Permission granted for state '" + toState.name + "'")
+                    return true; // Permission granted to transition to requested state
                 }
             });
 
-            return Auth;
 
+            return Auth;
         }]; // end $get()
 
 
