@@ -33,20 +33,6 @@ angular.module('wardenOAuth')
 
             var Auth = {
 
-
-                permissionDenied : function () {
-                    if (Principal.isAuthenticated()) {
-
-                        console.log("User is signed in but not authorized for desired state!");
-
-                        // user is signed in but not authorized for desired state
-                        _config.accessDeniedHandler();
-                    }else {
-                        console.log("User is not authenticated - going to Login!");
-                        this.redirectToLogin();
-                    }
-                },
-
                 /**
                  * Sends the user to the login page.
                  * If oAuth, this will redirect to another web-site
@@ -71,17 +57,13 @@ angular.module('wardenOAuth')
                       // OAuth
                       var loginUri = this.getLoginUrl();
                       console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
-                      this.redirectTo(loginUri);
+                      this._redirectTo(loginUri);
                     }
                 },
 
                 redirectToLogout : function () {
                     var logoutUri = this.getLogoutUrl();
-                    this.redirectTo(logoutUri);
-                },
-
-                redirectTo : function (url) {
-                    $window.location.href = url;
+                    this._redirectTo(logoutUri);
                 },
 
                 getLogoutUrl : function () {
@@ -112,7 +94,9 @@ angular.module('wardenOAuth')
                  * It must be present or an exception is thrown.
                  */
                 loginWithJwt : function(jwtToken){
-                    if(!jwtToken) throw "You must provide a JWT token in Auth.loginWithJwt(jwt)"
+
+                    if(!jwtToken) throw "You must provide a JWT token in Auth.loginWithJwt(jwt)";
+
                     JwtTokenService.setToken(token);
                     var identity = JwtTokenService.parseIdentity(token);
                     if(identity.isValid()){
@@ -194,6 +178,19 @@ angular.module('wardenOAuth')
                  *                                                                         *
                  **************************************************************************/
 
+                 _permissionDenied : function () {
+                     if (Principal.isAuthenticated()) {
+
+                         console.log("User is signed in but not authorized for desired state!");
+
+                         // user is signed in but not authorized for desired state
+                         _config.accessDeniedHandler();
+                     }else {
+                         console.log("User is not authenticated - going to Login!");
+                         this.redirectToLogin();
+                     }
+                 },
+
                 /**
                  * Returns the JWT token from the URL if available.
                  * @returns {string} Returns a JWT token string if present.
@@ -225,6 +222,10 @@ angular.module('wardenOAuth')
                 _getOAuthLoginUrl : function (client_id, redirect_uri) {
                     var loginUri = _config.loginUrl + "?response_type=token&client_id="+encodeURIComponent(client_id)+"&redirect_uri="+encodeURIComponent(redirect_uri);
                     return loginUri;
+                },
+
+                _redirectTo : function (url) {
+                    $window.location.href = url;
                 }
             };
 
@@ -240,7 +241,7 @@ angular.module('wardenOAuth')
 
                 if(!Auth.hasPermission(_desiredState)){
                     console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
-                    Auth.permissionDenied();
+                    Auth._permissionDenied();
                     return false;
                 }else{
                     return true; // Permission granted to transition to requested state
