@@ -8,6 +8,7 @@ angular.module('wardenOAuth')
 
             clientId : "myApp",
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
+            loginState : null,
             accessDeniedHandler : function () {
                 var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
@@ -46,10 +47,32 @@ angular.module('wardenOAuth')
                     }
                 },
 
+                /**
+                 * Sends the user to the login page.
+                 * If oAuth, this will redirect to another web-site
+                 * If local login, it will transition to the login state.
+                 */
                 redirectToLogin : function () {
-                    var loginUri = this.getLoginUrl();
-                    console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
-                    this.redirectTo(loginUri);
+
+                    if(_config.loginState){
+                      // Custom local login state
+                      console.log('Sending user to local login state: ' + _config.loginState);
+                      var params = {};
+                      if(_desiredState){
+                        params = {
+                          desiredStateName = _desiredState.name,
+                          desiredStateParams = _desiredStateParams
+                        }
+                      }
+                      $state.go(_config.loginState, params);
+                    }
+
+                    if(_config.loginUrl){
+                      // OAuth
+                      var loginUri = this.getLoginUrl();
+                      console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
+                      this.redirectTo(loginUri);
+                    }
                 },
 
                 redirectToLogout : function () {
@@ -81,43 +104,26 @@ angular.module('wardenOAuth')
                         state = _config.defaultRedirectState;
                     }
                     var redirectUri = UrlLocationService.getAbsoluteStateUrl(state, params);
-                    return this.getOAuthLoginUrl(_config.clientId, redirectUri);
+                    return this._getOAuthLoginUrl(_config.clientId, redirectUri);
                 },
 
                 /**
-                 * Gets the OAuth login URL
-                 * @param client_id
-                 * @param redirect_uri
-                 * @returns {string}
+                 * Login with a JWT token.
+                 * It must be present or an exception is thrown.
                  */
-                getOAuthLoginUrl : function (client_id, redirect_uri) {
-                    var loginUri = _config.loginUrl + "?response_type=token&client_id="+encodeURIComponent(client_id)+"&redirect_uri="+encodeURIComponent(redirect_uri);
-                    return loginUri;
-                },
-
-
-                /**
-                 * Returns the JWT token from the URL if available.
-                 * @returns {string} Returns a JWT token string if present.
-                 */
-                fetchUrlToken : function () {
-
-                    // Token from URL
-                    console.log("Checking if a query url param is set with a token ...");
-                    var queryParams = UrlLocationService.parseQueryParams();
-                    var token = queryParams['token'];
-
-                    // Check if valid token
-
-                    if(angular.isString(token) && token.length > 10){
-                        console.log("Found JWT in URL: " + token);
-                        UrlLocationService.deleteQueryParam('token');
-                        return token;
+                loginWithJwt : function(jwtToken){
+                    if(!jwtToken) throw "You must provide a JWT token in Auth.loginWithJwt(jwt)"
+                    JwtTokenService.setToken(token);
+                    var identity = JwtTokenService.parseIdentity(token);
+                    if(identity.isValid()){
+                        // Success
+                        Principal.authenticate(identity);
+                        console.log("Principal authenticated with: " + JSON.stringify(identity));
                     }else{
-                        return null;
+                        console.error("The parsed identity was not valid (token probably expired)!");
+                        this.logout(false);
                     }
                 },
-
 
                 /**
                  * Tries to authenticate by fetching the token from
@@ -127,44 +133,24 @@ angular.module('wardenOAuth')
 
                     console.log("Trying to authenticate with existing token ...");
 
-                    var token = this.fetchUrlToken();
-                    if(token){
-                        console.log("Persisting token from URL ...");
-                        JwtTokenService.setToken(token);
+                    var token = this._fetchUrlToken();
+                    if(!token){
+                        // Maybe we have a token in the local storage we can use
+                        token = JwtTokenService.getToken();
                     }
 
-                    token = JwtTokenService.getToken();
                     if (token) {
-                        var identity = JwtTokenService.parseIdentity(token);
-
-                        if(identity.isValid()){
-
-                            // Success
-
-                            Principal.authenticate(identity);
-
-                            console.log("Principal authenticated with: " + JSON.stringify(identity));
-
-                            if (identity.langKey) {
-                                // After the login the language will be changed to
-                                // the language selected by the user during his registration
-                                // TODO $translate.use(identity.langKey);
-                            }
-                        }else{
-                            Principal.authenticate(null);
-                            console.error("The parsed identity was not valid (token probably expired)!");
-                        }
+                        this.loginWithJwt(token);
                     }else{
                         Principal.authenticate(null);
                         console.log("No token found, cant authenticate.");
                     }
-
                 },
 
                 /**
                  * Performs a logout of the current user.
                  *
-                 * @param {boolean} global Perform a global logout?
+                 * @param {boolean} global Perform a global logout? (on the oauth server?)
                  */
                 logout: function (global) {
 
@@ -199,6 +185,46 @@ angular.module('wardenOAuth')
                         return false;
                     }
                     return true;
+                },
+
+
+                /***************************************************************************
+                 *                                                                         *
+                 * Private methods                                                         *
+                 *                                                                         *
+                 **************************************************************************/
+
+                /**
+                 * Returns the JWT token from the URL if available.
+                 * @returns {string} Returns a JWT token string if present.
+                 */
+                _fetchUrlToken : function () {
+
+                    // Token from URL
+                    console.log("Checking if a query url param is set with a token ...");
+                    var queryParams = UrlLocationService.parseQueryParams();
+                    var token = queryParams['token'];
+
+                    // Check if valid token
+
+                    if(angular.isString(token) && token.length > 10){
+                        console.log("Found JWT in URL: " + token);
+                        UrlLocationService.deleteQueryParam('token');
+                        return token;
+                    }else{
+                        return null;
+                    }
+                },
+
+                /**
+                 * Gets the OAuth login URL
+                 * @param client_id
+                 * @param redirect_uri
+                 * @returns {string}
+                 */
+                _getOAuthLoginUrl : function (client_id, redirect_uri) {
+                    var loginUri = _config.loginUrl + "?response_type=token&client_id="+encodeURIComponent(client_id)+"&redirect_uri="+encodeURIComponent(redirect_uri);
+                    return loginUri;
                 }
             };
 
