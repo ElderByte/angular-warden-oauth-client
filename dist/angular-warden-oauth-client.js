@@ -32,6 +32,7 @@ angular.module('wardenOAuth')
 
             clientId : "myApp",
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
+            loginState : null,
             accessDeniedHandler : function () {
                 var $state = angular.injector().get('$state');
                 $state.go("accessdenied");
@@ -44,8 +45,11 @@ angular.module('wardenOAuth')
             _config = config;
         };
 
-        this.$get = ["$rootScope", "$state", "$window", "Principal", "JwtTokenService", "UrlLocationService",
-            function($rootScope, $state, $window, Principal, JwtTokenService, UrlLocationService) {
+        this.$get = ["$state", "$window", "$transitions",
+                     "Principal", "JwtTokenService", "UrlLocationService",
+
+            function($state, $window, $transitions,
+                     Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
             var _desiredState = null;
@@ -54,198 +58,225 @@ angular.module('wardenOAuth')
             var Auth = {
 
 
-                permissionDenied : function () {
-                    if (Principal.isAuthenticated()) {
+              /**
+               * Sends the user to the login page.
+               * If oAuth, this will redirect to another web-site
+               * If local login, it will transition to the login state.
+               */
+              redirectToLogin : function () {
 
-                        console.log("User is signed in but not authorized for desired state!");
-
-                        // user is signed in but not authorized for desired state
-                        _config.accessDeniedHandler();
-                    }else {
-                        console.log("User is not authenticated - going to Login!");
-                        this.redirectToLogin();
+                  if(_config.loginState){
+                    // Custom local login state
+                    console.log('Sending user to local login state: ' + _config.loginState);
+                    var params = {};
+                    if(_desiredState){
+                      params = {
+                        desiredStateName : _desiredState.name,
+                        desiredStateParams : _desiredStateParams
+                      }
                     }
-                },
+                    $state.go(_config.loginState, params);
+                  }
 
-                redirectToLogin : function () {
+                  if(_config.loginUrl){
+                    // OAuth
                     var loginUri = this.getLoginUrl();
                     console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
-                    this.redirectTo(loginUri);
-                },
-
-                redirectToLogout : function () {
-                    var logoutUri = this.getLogoutUrl();
-                    this.redirectTo(logoutUri);
-                },
-
-                redirectTo : function (url) {
-                    $window.location.href = url;
-                },
-
-                getLogoutUrl : function () {
-                    return this.getLoginUrl() + "&action=logout";
-                },
-
-                /**
-                 * Returns the OAuth login URL
-                 * @returns {*|string}
-                 */
-                getLoginUrl : function () {
-
-                    var state;
-                    var params = {};
-
-                    if(_desiredState){
-                        state = _desiredState.name;
-                        params = _desiredStateParams;
-                    }else{
-                        state = _config.defaultRedirectState;
-                    }
-                    var redirectUri = UrlLocationService.getAbsoluteStateUrl(state, params);
-                    return this.getOAuthLoginUrl(_config.clientId, redirectUri);
-                },
-
-                /**
-                 * Gets the OAuth login URL
-                 * @param client_id
-                 * @param redirect_uri
-                 * @returns {string}
-                 */
-                getOAuthLoginUrl : function (client_id, redirect_uri) {
-                    var loginUri = _config.loginUrl + "?response_type=token&client_id="+encodeURIComponent(client_id)+"&redirect_uri="+encodeURIComponent(redirect_uri);
-                    return loginUri;
-                },
+                    this._redirectTo(loginUri);
+                  }
+              },
 
 
-                /**
-                 * Returns the JWT token from the URL if available.
-                 * @returns {string} Returns a JWT token string if present.
-                 */
-                fetchUrlToken : function () {
+              redirectToLogout : function () {
+                  var logoutUri = this.getLogoutUrl();
+                  this._redirectTo(logoutUri);
+              },
 
-                    // Token from URL
-                    console.log("Checking if a query url param is set with a token ...");
-                    var queryParams = UrlLocationService.parseQueryParams();
-                    var token = queryParams['token'];
+              getLogoutUrl : function () {
+                  return this.getLoginUrl() + "&action=logout";
+              },
 
-                    // Check if valid token
+              /**
+               * Returns the OAuth login URL
+               * @returns {*|string}
+               */
+              getLoginUrl : function () {
 
-                    if(angular.isString(token) && token.length > 10){
-                        console.log("Found JWT in URL: " + token);
-                        UrlLocationService.deleteQueryParam('token');
-                        return token;
-                    }else{
-                        return null;
-                    }
-                },
+                  var state;
+                  var params = {};
 
+                  if(_desiredState){
+                      state = _desiredState.name;
+                      params = _desiredStateParams;
+                  }else{
+                      state = _config.defaultRedirectState;
+                  }
+                  var redirectUri = UrlLocationService.getAbsoluteStateUrl(state, params);
+                  return this._getOAuthLoginUrl(_config.clientId, redirectUri);
+              },
 
-                /**
-                 * Tries to authenticate by fetching the token from
-                 * the local storage or the url query param ?token/jwt
-                 */
-                authenticate: function(){
+              /**
+               * Login with a JWT token.
+               * It must be present or an exception is thrown.
+               */
+              loginWithJwt : function(jwtToken){
 
-                    console.log("Trying to authenticate with existing token ...");
+                  if(!jwtToken) throw "You must provide a JWT token in Auth.loginWithJwt(jwt)";
 
-                    var token = this.fetchUrlToken();
-                    if(token){
-                        console.log("Persisting token from URL ...");
-                        JwtTokenService.setToken(token);
-                    }
+                  JwtTokenService.setToken(token);
+                  var identity = JwtTokenService.parseIdentity(token);
+                  if(identity.isValid()){
+                      // Success
+                      Principal.authenticate(identity);
+                      console.log("Principal authenticated with: " + JSON.stringify(identity));
+                  }else{
+                      console.error("The parsed identity was not valid (token probably expired)!");
+                      this.logout(false);
+                  }
+              },
 
-                    token = JwtTokenService.getToken();
-                    if (token) {
-                        var identity = JwtTokenService.parseIdentity(token);
+              /**
+               * Tries to authenticate by fetching the token from
+               * the local storage or the url query param ?token/jwt
+               */
+              authenticate: function(){
 
-                        if(identity.isValid()){
+                  console.log("Trying to authenticate with existing token ...");
 
-                            // Success
+                  var token = this._fetchUrlToken();
+                  if(!token){
+                      // Maybe we have a token in the local storage we can use
+                      token = JwtTokenService.getToken();
+                  }
 
-                            Principal.authenticate(identity);
+                  if (token) {
+                      this.loginWithJwt(token);
+                  }else{
+                      Principal.authenticate(null);
+                      console.log("No token found, cant authenticate.");
+                  }
+              },
 
-                            console.log("Principal authenticated with: " + JSON.stringify(identity));
+              /**
+               * Performs a logout of the current user.
+               *
+               * @param {boolean} global Perform a global logout? (on the oauth server?)
+               */
+              logout: function (global) {
 
-                            if (identity.langKey) {
-                                // After the login the language will be changed to
-                                // the language selected by the user during his registration
-                                // TODO $translate.use(identity.langKey);
-                            }
-                        }else{
-                            Principal.authenticate(null);
-                            console.error("The parsed identity was not valid (token probably expired)!");
-                        }
-                    }else{
-                        Principal.authenticate(null);
-                        console.log("No token found, cant authenticate.");
-                    }
+                  console.log("Logging out...");
+                  JwtTokenService.deleteToken();
+                  Principal.authenticate(null);
 
-                },
+                  if(global){
+                    // Global logout
+                    this.redirectToLogout();
+                  }
+              },
 
-                /**
-                 * Performs a logout of the current user.
-                 *
-                 * @param {boolean} global Perform a global logout?
-                 */
-                logout: function (global) {
+              /**
+               * Checks if the current user has permission to visit the given state
+               * @param state The state to check
+               * @returns {boolean}
+               */
+              hasPermission : function(state) {
 
-                    console.log("Logging out...");
-                    JwtTokenService.deleteToken();
-                    Principal.authenticate(null);
-
-                    if(global){
-                      // Global logout
-                      this.redirectToLogout();
-                    }
-                },
-
-                /**
-                 * Checks if the current user has permission to visit the given state
-                 * @param state The state to check
-                 * @returns {boolean}
-                 */
-                hasPermission : function(state) {
-
-                    if(!_config.stateRoleSecurityEnabled){
-                      return true;
-                    }
-
-                    if (state.data &&
-                        state.data.roles &&
-                        state.data.roles.length > 0 &&
-                        !Principal.isInAnyRole(state.data.roles)) {
-
-                        // User has not the required roles
-                        console.log("User has not the required web-ui roles: "+ JSON.stringify(state.data.roles) +"! Current User: " + JSON.stringify(Principal));
-                        return false;
-                    }
+                  if(!_config.stateRoleSecurityEnabled){
                     return true;
-                }
+                  }
+
+                  if (state.data &&
+                      state.data.roles &&
+                      state.data.roles.length > 0 &&
+                      !Principal.isInAnyRole(state.data.roles)) {
+
+                      // User has not the required roles
+                      console.log("User has not the required web-ui roles: "+ JSON.stringify(state.data.roles) +"! Current User: " + JSON.stringify(Principal));
+                      return false;
+                  }
+                  return true;
+              },
+
+
+              /***************************************************************************
+               *                                                                         *
+               * Private methods                                                         *
+               *                                                                         *
+               **************************************************************************/
+
+               _permissionDenied : function () {
+                   if (Principal.isAuthenticated()) {
+
+                       console.log("User is signed in but not authorized for desired state!");
+
+                       // user is signed in but not authorized for desired state
+                       _config.accessDeniedHandler();
+                   }else {
+                       console.log("User is not authenticated - going to Login!");
+                       this.redirectToLogin();
+                   }
+               },
+
+              /**
+               * Returns the JWT token from the URL if available.
+               * @returns {string} Returns a JWT token string if present.
+               */
+              _fetchUrlToken : function () {
+
+                  // Token from URL
+                  console.log("Checking if a query url param is set with a token ...");
+                  var queryParams = UrlLocationService.parseQueryParams();
+                  var token = queryParams['token'];
+
+                  // Check if valid token
+
+                  if(angular.isString(token) && token.length > 10){
+                      console.log("Found JWT in URL: " + token);
+                      UrlLocationService.deleteQueryParam('token');
+                      return token;
+                  }else{
+                      return null;
+                  }
+              },
+
+              /**
+               * Gets the OAuth login URL
+               * @param client_id
+               * @param redirect_uri
+               * @returns {string}
+               */
+              _getOAuthLoginUrl : function (client_id, redirect_uri) {
+                  var loginUri = _config.loginUrl + "?response_type=token&client_id="+encodeURIComponent(client_id)+"&redirect_uri="+encodeURIComponent(redirect_uri);
+                  return loginUri;
+              },
+
+              _redirectTo : function (url) {
+                  $window.location.href = url;
+              }
+
             };
 
-            // Install a $stateChangeStart event listener
-            $rootScope.$on('$stateChangeStart', function (event, toState, toStateParams) {
+            // Authentication hook
 
-                // console.log("auth.service.js - $stateChangeStart");
-                _desiredState = toState;
-                _desiredStateParams = toStateParams;
+            $transitions.onBefore({}, function (trans) {
+
+                // Before we grant to visit a given state, we check if there are role restrictions.
+                _desiredState = trans.$to();
+                _desiredStateParams = trans.params();
 
                 Auth.authenticate();
 
-                if(!Auth.hasPermission(toState)){
-
-                    console.log("User lacks privilege for requested state '"+toState.name+"'. Handling ...");
-
-                    event.preventDefault();
-                    Auth.permissionDenied();
-
+                if(!Auth.hasPermission(_desiredState)){
+                    console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
+                    Auth._permissionDenied();
+                    return false;
                 }else{
-                    console.log("Permission granted for state '" + toState.name + "'")
+                    return true; // Permission granted to transition to requested state
                 }
             });
 
-            return Auth;
 
+            return Auth;
         }]; // end $get()
 
 
