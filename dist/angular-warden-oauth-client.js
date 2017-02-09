@@ -76,6 +76,7 @@ angular.module('wardenOAuth')
                       }
                     }
                     $state.go(_config.loginState, params);
+                    return true;
                   }
 
                   if(_config.loginUrl){
@@ -83,7 +84,10 @@ angular.module('wardenOAuth')
                     var loginUri = this.getLoginUrl();
                     console.log("Redirecting to OAuth-Login '" + loginUri + "' ...");
                     this._redirectTo(loginUri);
+                    return true;
                   }
+
+                  return false;
               },
 
 
