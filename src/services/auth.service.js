@@ -5,14 +5,10 @@ angular.module('wardenOAuth')
     .provider('Auth', function AuthProvider() {
 
         var _config = {
-
             clientId : "myApp",
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
             loginState : null,
-            accessDeniedHandler : function () {
-                var $state = angular.injector().get('$state');
-                $state.go("accessdenied");
-            },
+            accessDeniedState : "accessdenied",
             defaultRedirectState : "home",
             stateRoleSecurityEnabled : true
         };
@@ -186,13 +182,28 @@ angular.module('wardenOAuth')
                *                                                                         *
                **************************************************************************/
 
-               _permissionDenied : function () {
+               /**
+                * Invoked when the user tried to navigate a state (desired) he is not allowed to.
+                * @param from The origin state
+                * @param desired The state he was denied to visit
+                */
+               _permissionDenied : function (from, fromParams, desired, desiredParams) {
                    if (Principal.isAuthenticated()) {
 
                        console.log("User is signed in but not authorized for desired state!");
 
-                       // user is signed in but not authorized for desired state
-                       _config.accessDeniedHandler();
+                      if(_config.accessDeniedState){
+
+                        var params = {
+                            desiredState : desired.name,
+                            desiredStateParams : desiredParams,
+                            redirectBackUrl : UrlLocationService.getAbsoluteStateUrl(from.name, fromParams)
+                        };
+
+                        $state.go(_config.accessDeniedState, params);
+                      }else {
+                        console.log("No access-denied state has been provided!")
+                      }
                    }else {
                        console.log("User is not authenticated - going to Login!");
                        this.redirectToLogin();
@@ -250,7 +261,9 @@ angular.module('wardenOAuth')
 
                 if(!Auth.hasPermission(_desiredState)){
                     console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
-                    Auth._permissionDenied();
+                    Auth._permissionDenied(
+                      trans.$from(), trans.params('from')
+                      trans.$to(), trans.params());
                     return false;
                 }else{
                     return true; // Permission granted to transition to requested state
