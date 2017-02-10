@@ -47,6 +47,12 @@ You can configure the auth client in your Angular configuration section by injec
 ```javascript
 accessDeniedHandler : "accessdenied"
 ```
+Provided State Params:
+
+* desiredState
+* desiredParams
+* redirectBackUrl
+
 
 **stateRoleSecurityEnabled [boolean]**
 Enable or disable the role securty checks. Enabled by default.
