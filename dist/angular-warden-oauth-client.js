@@ -48,8 +48,12 @@ angular.module('wardenOAuth')
                      Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
+
+            var _previousState = null;
+            var _previousStateParams = null;
             var _desiredState = null;
             var _desiredStateParams = null;
+
 
             var Auth = {
 
@@ -199,6 +203,9 @@ angular.module('wardenOAuth')
                   return true;
               },
 
+              permissionDenied : function() {
+                  this._permissionDenied(_previousState, _previousStateParams, _desiredState, _desiredStateParams);
+              },
 
               /***************************************************************************
                *                                                                         *
@@ -218,13 +225,12 @@ angular.module('wardenOAuth')
 
                       if(_config.accessDeniedState){
 
-                        var params = {
+                        $state.go(_config.accessDeniedState, {
                             desiredState : desired.name,
                             desiredStateParams : desiredParams,
                             redirectBackUrl : UrlLocationService.getAbsoluteStateUrl(from.name, fromParams)
-                        };
+                        });
 
-                        $state.go(_config.accessDeniedState, params);
                       }else {
                         console.log("No access-denied state has been provided!")
                       }
@@ -280,14 +286,14 @@ angular.module('wardenOAuth')
                 // Before we grant to visit a given state, we check if there are role restrictions.
                 _desiredState = trans.$to();
                 _desiredStateParams = trans.params();
+                _previousState = trans.$from();
+                _previousStateParams = trans.params('from');
 
                 Auth.authenticate();
 
                 if(!Auth.hasPermission(_desiredState)){
                     console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
-                    Auth._permissionDenied(
-                      trans.$from(), trans.params('from'),
-                      trans.$to(), trans.params());
+                    Auth.permissionDenied();
                     return false;
                 }else{
                     return true; // Permission granted to transition to requested state
@@ -351,6 +357,7 @@ angular.module('wardenOAuth')
             }
         };
     }]);
+
 'use strict';
 
 angular.module('wardenOAuth')
