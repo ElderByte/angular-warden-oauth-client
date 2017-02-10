@@ -42,13 +42,10 @@ You can configure the auth client in your Angular configuration section by injec
 
 ### General configuration properties
 
-**accessDeniedHandler [function()]**
+**accessDeniedHandler [string]**
 
 ```javascript
-accessDeniedHandler : function () {
-    var $state = angular.injector().get('$state');
-    $state.go("accessdenied");
-}
+accessDeniedHandler : "accessdenied"
 ```
 
 **stateRoleSecurityEnabled [boolean]**
@@ -72,7 +69,7 @@ You can configure the OAuth client in your Angular configuration section by inje
 		clientId : "myApp",
         loginUrl : "https://myOAuthServer.com/oauth/login"
 	});
-	
+
 });
 ```
 

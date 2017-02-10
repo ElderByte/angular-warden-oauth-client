@@ -262,7 +262,7 @@ angular.module('wardenOAuth')
                 if(!Auth.hasPermission(_desiredState)){
                     console.log("User lacks privilege for requested state '"+_desiredState.name+"'!");
                     Auth._permissionDenied(
-                      trans.$from(), trans.params('from')
+                      trans.$from(), trans.params('from'),
                       trans.$to(), trans.params());
                     return false;
                 }else{

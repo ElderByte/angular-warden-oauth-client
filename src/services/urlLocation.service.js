@@ -17,7 +17,7 @@ angular.module('wardenOAuth')
 
             /**
             * Returns an absolute URL with the given state/params
-            * 
+            *
             * This method is more robust than $state.href(s,p,{absolute : true})
             */
             getAbsoluteStateUrl : function(state, params) {
