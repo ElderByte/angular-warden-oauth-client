@@ -6,10 +6,21 @@ angular.module('wardenOAuth')
     .factory('UrlLocationService', function ($location, $state) {
         return {
 
+            /**
+            * Returns a map with all query params
+            *
+            * var params = UrlLocationService.parseQueryParams();
+            * var p = params['token'];
+            *
+            */
             parseQueryParams: function () {
                 return $location.search();
             },
 
+            /**
+            * Deletes the query param with the given key from the browser address bar.
+            * (Works only with params after #-hash-bang)
+            */
             deleteQueryParam: function (key) {
                 console.log("Attempting to delete query param " + key );
                 $location.search(key, null);
