@@ -33,6 +33,25 @@ angular.module('wardenOAuth')
 
             var Auth = {
 
+              /**
+              * Signs the given URL with the current JWT token so it can be used
+              * as a download/remote link.
+              *
+              * @param The url which should be authorized.
+              * @returns {string} The authorized url
+              */
+              authorizeUrl : function(url){
+                if(Principal.isAuthenticated()){
+                    var identity = Principal.getIdentity();
+                    if(identity.access_token){
+                        return UrlLocationService.setQueryParam(url, 'token', identity.access_token);
+                    }else{
+                        throw "Can not authorize URL with JWT token - The current principal identity does not have an access token.";
+                    }
+                }else{
+                  throw "Can not authorize URL with JWT token - Not authenticated yet.";
+                }
+              },
 
               /**
                * Sends the user to the login page.

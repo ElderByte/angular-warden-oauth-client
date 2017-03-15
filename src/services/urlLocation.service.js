@@ -22,7 +22,7 @@ angular.module('wardenOAuth')
                     uri = this.setQueryParam(uri, key, value);
                 }
                 return uri;
-            };
+            },
 
             /**
              * Updates the query-param in the given url with the new value.
