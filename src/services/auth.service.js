@@ -9,8 +9,6 @@ angular.module('wardenOAuth')
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
             loginState : null,
             accessDeniedState : "accessdenied",
-            authSuccessCallback : function(){ return; },
-            authErrorCallback : function(){ return; },
             defaultRedirectState : "home",
             stateRoleSecurityEnabled : true
         };
@@ -19,15 +17,7 @@ angular.module('wardenOAuth')
             _config = config;
         };
 
-        this.authSuccessCallback = function(callback) {
-            _config.authSuccessCallback = callback;
-        };
-
-        this.authErrorCallback = function(callback) {
-            _config.authErrorCallback = callback;
-        };
-
-        this.$get = ["$state", "$window", "$transitions",
+        this.$get = ["$rootScope", "$state", "$window", "$transitions",
                      "Principal", "JwtTokenService", "UrlLocationService",
 
             function($state, $window, $transitions,
@@ -162,9 +152,9 @@ angular.module('wardenOAuth')
 
                   if (token) {
                       if(this.loginWithJwt(token)){
-                          _config.authSuccessCallback();
+                          $rootScope.$broadcast('wardenLoginSuccessEvent');
                       }else {
-                          _config.authErrorCallback();
+                          $rootScope.$broadcast('wardenLoginFailureEvent');
                       }
                   }else{
                       Principal.authenticate(null);
