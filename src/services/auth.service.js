@@ -20,7 +20,7 @@ angular.module('wardenOAuth')
         this.$get = ["$rootScope", "$state", "$window", "$transitions",
                      "Principal", "JwtTokenService", "UrlLocationService",
 
-            function($state, $window, $transitions,
+            function($rootScope, $state, $window, $transitions,
                      Principal, JwtTokenService, UrlLocationService) {
 
             // Private fields
