@@ -172,6 +172,7 @@ angular.module('wardenOAuth')
                   console.log("Logging out...");
                   JwtTokenService.deleteToken();
                   Principal.authenticate(null);
+                  $rootScope.$broadcast('wardenLogoutEvent');
 
                   if(global){
                     // Global logout
