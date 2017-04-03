@@ -9,12 +9,22 @@ angular.module('wardenOAuth')
             loginUrl : "/warden/warden-ui/index.html#/realms/master/oauth/login",
             loginState : null,
             accessDeniedState : "accessdenied",
+            authSuccessCallback : function(){ return; },
+            authErrorCallback : function(){ return; },
             defaultRedirectState : "home",
             stateRoleSecurityEnabled : true
         };
 
         this.config = function(config) {
             _config = config;
+        };
+
+        this.authSuccessCallback = function(callback) {
+            _config.authSuccessCallback = callback;
+        };
+
+        this.authErrorCallback = function(callback) {
+            _config.authErrorCallback = callback;
         };
 
         this.$get = ["$state", "$window", "$transitions",
@@ -151,7 +161,11 @@ angular.module('wardenOAuth')
                   }
 
                   if (token) {
-                      this.loginWithJwt(token);
+                      if(this.loginWithJwt(token)){
+                          _config.authSuccessCallback();
+                      }else {
+                          _config.authErrorCallback();
+                      }
                   }else{
                       Principal.authenticate(null);
                       console.log("No token found, cant authenticate.");
