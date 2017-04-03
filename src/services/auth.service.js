@@ -17,7 +17,7 @@ angular.module('wardenOAuth')
             _config = config;
         };
 
-        this.$get = ["$state", "$window", "$transitions",
+        this.$get = ["$rootScope", "$state", "$window", "$transitions",
                      "Principal", "JwtTokenService", "UrlLocationService",
 
             function($state, $window, $transitions,
@@ -151,7 +151,11 @@ angular.module('wardenOAuth')
                   }
 
                   if (token) {
-                      this.loginWithJwt(token);
+                      if(this.loginWithJwt(token)){
+                          $rootScope.$broadcast('wardenLoginSuccessEvent');
+                      }else {
+                          $rootScope.$broadcast('wardenLoginFailureEvent');
+                      }
                   }else{
                       Principal.authenticate(null);
                       console.log("No token found, cant authenticate.");
@@ -168,6 +172,7 @@ angular.module('wardenOAuth')
                   console.log("Logging out...");
                   JwtTokenService.deleteToken();
                   Principal.authenticate(null);
+                  $rootScope.$broadcast('wardenLogoutEvent');
 
                   if(global){
                     // Global logout
