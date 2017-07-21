@@ -389,6 +389,24 @@ angular.module('wardenOAuth')
 
 
         /**
+         * Parses the userName out of the given subject string.
+         *
+         * @param subject expected format: 'domain/userName'
+         * @returns {*} userName or subject if no / present
+         */
+        function parseUserName(subject) {
+            var result = subject;
+
+            var delimiterIndex = subject.lastIndexOf("/");
+
+            if(delimiterIndex >= 0 && delimiterIndex !== subject.length-1){
+                result = subject.substring(delimiterIndex + 1, subject.length);
+            }
+
+            return result;
+        }
+
+        /**
          * Parse an identity object from the given jwt token
          * @param jwt
          * @returns {*}
@@ -401,7 +419,8 @@ angular.module('wardenOAuth')
                 var identity = {
                     access_token: jwt,
                     expires_at: jwtHelper.getTokenExpirationDate(jwt),
-                    userLogin: claims.sub,
+                    userLogin: parseUserName(claims.sub),
+                    subject: claims.sub,
                     name: claims.name,
                     realm: claims.aud,
                     roles: claims.roles,
