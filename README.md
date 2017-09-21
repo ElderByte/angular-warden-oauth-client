@@ -110,6 +110,6 @@ Auth.loginWithJwt(myJWTToken);
 After you have added and tested a new feature, a new release has to be made.
 
 1. Increment the version in `package.json` and `bower.json` - they must have the same version
-2. Build the library into the /dist directiry by running `gulp build` from the project root directory.
+2. Build the library into the /dist directiry by running `npm run build` from the project root directory.
 3. Commit the compiled /dist changes
 4. Create a release / tag so the new release gets picked up by bower.
