@@ -3,13 +3,14 @@
   "version": "0.4.8",
   "description": "Provides a angular OAuth client for JWT handling. Supports role based security integrated with ui-router.",
   "main": "index.js",
+  "scripts": {
+    "bower": "bower install",
+    "test": "gulp test-src"
+  },
   "license": "MIT",
   "author": {
     "name": "",
     "email": ""
-  },
-  "scripts": {
-    "test": "gulp test-src"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "bower": "^1.8.2",
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.1",
     "gulp-inject-string": "^1.1.0",

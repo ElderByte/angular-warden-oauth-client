@@ -16,8 +16,5 @@
     "angular-jwt": "^0.1.9",
     "angular-webstorage-light": "^0.1.0"
   },
-  "devDependencies": {
-  },
-  "resolutions": {
-  }
+  "devDependencies": {}
 }
