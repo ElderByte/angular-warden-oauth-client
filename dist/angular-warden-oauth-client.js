@@ -273,14 +273,18 @@ angular.module('wardenOAuth')
                   // Token from URL
                   console.log("Checking if a query url param is set with a token ...");
                   var queryParams = UrlLocationService.parseQueryParams();
-                  var token = queryParams['token'];
+                  var accessToken = queryParams['token'];
+                  if(!accessToken){
+                      accessToken = queryParams['access_token'];
+                  }
 
                   // Check if valid token
 
-                  if(angular.isString(token) && token.length > 10){
-                      console.log("Found JWT in URL: " + token);
+                  if(angular.isString(accessToken) && accessToken.length > 10){
+                      console.log("Found JWT in URL: " + accessToken);
                       UrlLocationService.deleteQueryParam('token');
-                      return token;
+                      UrlLocationService.deleteQueryParam('access_token');
+                      return accessToken;
                   }else{
                       return null;
                   }
